@@ -20,6 +20,7 @@ typedef struct {
 } Player;
 
 typedef struct {
+  int direction;
   Vector2 startPos;
   Vector2 endPos;
   float thick;
@@ -32,10 +33,10 @@ int WINDOW_HEIGHT = 600;
 
 Player player1 = {0};
 Timer player1_move_timer = {0};
-Timer player1_attack_timer = {0};
 
 Player player2 = {0};
 Timer player2_move_timer = {0};
+Timer player2_attack_timer = {0};
 bool p2ismoving = false;
 bool p2afk = false;
 double p2now = 1000;
@@ -51,7 +52,6 @@ void draw_player1_line(void);
 void draw_life(void);
 
 void input(void);
-bool player1_attack(void);
 void attack(void);
 
 void all_timers(void);
@@ -63,26 +63,29 @@ void deactivate_player1_move_timer(void);
 void update_player2_move_timer(void);
 void activate_player2_move_timer(void);
 void deactivate_player2_move_timer(void);
+
+void update_player2_attack_timer(void);
+void activate_player2_attack_timer(void);
+void deactivate_player2_attack_timer(void);
+void player2_attack(void);
+
 void change_player2(void);
 void check_player2_afk(void);
 
 void init_game() {
-  player1.direction = DOWN;
-  player1.old_direction = DOWN;
+  player1.direction = NONE;
+  player1.old_direction = NONE;
   player1.pos = (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2};
   player1.radius = 20;
   player1.color = BLUE;
   player1.life = 16;
 
-  player1_attack_timer.active = false;
-  player1_attack_timer.duration = 0.2;
-  player1_attack_timer.start_time = 0;
   player1_move_timer.active = false;
   player1_move_timer.duration = 0.2;
   player1_move_timer.start_time = 0;
 
   player2.direction = NONE;
-  player2.old_direction = DOWN;
+  player2.old_direction = NONE;
   player2.pos =
       (Vector2){(WINDOW_WIDTH / 2), (WINDOW_HEIGHT / 2) - (player1.radius * 4)};
   player2.radius = 20;
@@ -93,8 +96,13 @@ void init_game() {
   player2_move_timer.duration = 0.2;
   player2_move_timer.start_time = 0;
 
+  player2_attack_timer.active = false;
+  player2_attack_timer.duration = 0.6;
+  player2_attack_timer.start_time = 0;
+
   player1line.color = WHITE;
   player1line.thick = 3;
+  player1line.direction = NONE;
 }
 
 int main() {
@@ -138,24 +146,28 @@ void draw_player1_line() {
         (Vector2){player1.pos.x, player1.pos.y - player1.radius};
     player1line.endPos =
         (Vector2){player1.pos.x, player1.pos.y - (player1.radius * 3)};
+    player1line.direction = UP;
     break;
   case DOWN:
     player1line.startPos =
         (Vector2){player1.pos.x, player1.pos.y + player1.radius};
     player1line.endPos =
         (Vector2){player1.pos.x, player1.pos.y + player1.radius * 3};
+    player1line.direction = DOWN;
     break;
   case RIGHT:
     player1line.startPos =
         (Vector2){player1.pos.x + player1.radius, player1.pos.y};
     player1line.endPos =
         (Vector2){player1.pos.x + player1.radius * 3, player1.pos.y};
+    player1line.direction = RIGHT;
     break;
   case LEFT:
     player1line.startPos =
         (Vector2){player1.pos.x - player1.radius, player1.pos.y};
     player1line.endPos =
         (Vector2){player1.pos.x - player1.radius * 3, player1.pos.y};
+    player1line.direction = LEFT;
     break;
   }
 }
@@ -220,6 +232,8 @@ void input() {
       player2.old_direction = LEFT;
       p2now = GetTime();
       activate_player2_move_timer();
+    } else {
+      p2ismoving = false;
     }
   }
 
@@ -242,22 +256,21 @@ void input() {
   attack();
 }
 
-bool player1_attack() {
-  if (IsKeyPressed(KEY_SPACE)) {
-    return true;
+void player1_attack() {
+  if (player1line.direction == player2.direction && IsKeyPressed(KEY_SPACE)) {
+    player2.life -= 2;
   }
-  return false;
 }
 
 void attack() {
-  if (player1.direction == player2.direction && player1_attack()) {
-    player2.life--;
-  }
+  player1_attack();
+  player2_attack();
 }
 
 void all_timers() {
   update_player1_move_timer();
   update_player2_move_timer();
+  update_player2_attack_timer();
   check_player2_afk();
 }
 
@@ -278,6 +291,27 @@ void update_player1_move_timer() {
       printf("CARAMBOLAS\n");
       draw_player1_line();
       deactivate_player1_move_timer();
+    }
+  }
+}
+
+void activate_player2_attack_timer() {
+  player2_attack_timer.active = true;
+  player2_attack_timer.start_time = GetTime();
+}
+
+void deactivate_player2_attack_timer() {
+  player2_attack_timer.active = false;
+  player2_attack_timer.start_time = 0;
+}
+
+void update_player2_attack_timer() {
+  if (player2_attack_timer.active) {
+    if (GetTime() - player2_attack_timer.start_time >=
+        player2_attack_timer.duration) {
+      printf("CATAPIMBASDOIS\n");
+      player1.life--;
+      deactivate_player2_attack_timer();
     }
   }
 }
@@ -306,5 +340,16 @@ void update_player2_move_timer() {
 void check_player2_afk() {
   if (GetTime() - p2now >= p2_disapper_cooldown) {
     player2.direction = NONE;
+  }
+}
+
+void player2_attack() {
+  if (p2ismoving) {
+    if (player2_attack_timer.active == false) {
+      printf("haa\n");
+      activate_player2_attack_timer();
+    }
+  } else {
+    deactivate_player2_attack_timer();
   }
 }
