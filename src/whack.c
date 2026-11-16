@@ -1,5 +1,4 @@
 #include <raylib.h>
-#include <stdio.h>
 
 typedef enum { UP, DOWN, LEFT, RIGHT, CENTER, NONE } PlayerPos;
 
@@ -97,7 +96,7 @@ void init_game() {
   player2_move_timer.start_time = 0;
 
   player2_attack_timer.active = false;
-  player2_attack_timer.duration = 0.6;
+  player2_attack_timer.duration = 0.4;
   player2_attack_timer.start_time = 0;
 
   player1line.color = WHITE;
@@ -173,31 +172,26 @@ void draw_player1_line() {
 }
 
 void change_player2() {
-  printf("entrou no change e player direction = %d\n", player2.direction);
   switch (player2.old_direction) {
   case UP:
     player2.pos = (Vector2){(WINDOW_WIDTH / 2),
                             (WINDOW_HEIGHT / 2) - (player1.radius * 4)};
     player2.direction = UP;
-    printf("UP\n");
     break;
   case DOWN:
     player2.pos = (Vector2){(WINDOW_WIDTH / 2),
                             (WINDOW_HEIGHT / 2) + (player1.radius * 4)};
     player2.direction = DOWN;
-    printf("DOWN\n");
     break;
   case RIGHT:
     player2.pos =
         (Vector2){(WINDOW_WIDTH / 2) + player1.radius * 4, WINDOW_HEIGHT / 2};
     player2.direction = RIGHT;
-    printf("RIGHT\n");
     break;
   case LEFT:
     player2.pos =
         (Vector2){(WINDOW_WIDTH / 2) - player1.radius * 4, WINDOW_HEIGHT / 2};
     player2.direction = LEFT;
-    printf("LEFT\n");
     break;
   case NONE:
   }
@@ -288,7 +282,6 @@ void update_player1_move_timer() {
   if (player1_move_timer.active) {
     if (GetTime() - player1_move_timer.start_time >=
         player1_move_timer.duration) {
-      printf("CARAMBOLAS\n");
       draw_player1_line();
       deactivate_player1_move_timer();
     }
@@ -309,7 +302,6 @@ void update_player2_attack_timer() {
   if (player2_attack_timer.active) {
     if (GetTime() - player2_attack_timer.start_time >=
         player2_attack_timer.duration) {
-      printf("CATAPIMBASDOIS\n");
       player1.life--;
       deactivate_player2_attack_timer();
     }
@@ -330,7 +322,6 @@ void update_player2_move_timer() {
   if (player2_move_timer.active) {
     if (GetTime() - player2_move_timer.start_time >=
         player2_move_timer.duration) {
-      printf("CATAPIMBAS\n");
       change_player2();
       deactivate_player2_move_timer();
     }
@@ -346,8 +337,10 @@ void check_player2_afk() {
 void player2_attack() {
   if (p2ismoving) {
     if (player2_attack_timer.active == false) {
-      printf("haa\n");
       activate_player2_attack_timer();
+    }
+    if (player2.direction != player2.old_direction) {
+      deactivate_player2_attack_timer();
     }
   } else {
     deactivate_player2_attack_timer();
